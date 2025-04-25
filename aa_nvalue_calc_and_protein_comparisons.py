@@ -1,8 +1,16 @@
+"""
+This script can calculate amino acid n-values from protein/peptide n-values.
+Uses least-squares solution for matrices and Monte Carlo simulation.
+Will also compare literature vs. empirical n-values for proteins/peptides as a control.
+Ben Driggs, 2025 Research Capstone Project
+Mentor - JC Price, BYU
+"""
+
 import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.optimize import least_squares, lsq_linear
+from scipy.optimize import lsq_linear
 
 
 def graph_scatterplot(title, x_label, x_axis, y_label, y_axis, color, count):
@@ -70,8 +78,6 @@ def main():
         
         columns = ['Protein ID', 'Sequence', 'cf', 'mz', 'n_value', 'abundances', 'n_value_stddev']
         l_columns = ['Protein ID', 'Sequence', 'cf', 'mz', 'abundances', 'n_value']
-        # columns = ['Protein ID', 'sequence', 'Elemental Composition', 'n_value', 'stddev']
-        # l_columns = ['Protein ID', 'sequence', 'Elemental Composition', 'number of possible labeling sites', 'stddev']
         emp_df = emp_df[columns]
         lit_df = lit_df[l_columns]
         
@@ -108,22 +114,17 @@ def main():
         merged_df = merged_df[~e_mask]
         
         # filter by abundance
-        # sum abundances and take top 50%
+        # sum abundances and take top 75%
         merged_df.loc[:, 'sum_abundances'] = merged_df['abundances'].apply(
             lambda v: sum([float(value) for value in v[1:-1].split(', ')]))
 
         emp_threshold = merged_df['sum_abundances'].quantile(0.25)
-
         merged_df = merged_df[merged_df['sum_abundances'] >= emp_threshold]
-        
-        # emp_threshold = merged_df['sum_abundances'].quantile(0.75)
-        # merged_df = merged_df[merged_df['sum_abundances'] <= emp_threshold]
         
         # filter out noise by setting a limit on n_value standard deviation
         merged_df = merged_df[merged_df['n_value_lit'] != "no valid time points"]
         merged_df = merged_df[merged_df['n_value_emp'] != "no valid time points"]
         filtered_df = merged_df[merged_df.loc[:, 'n_value_stddev'] <= 0.05]
-        # filtered_df = merged_df.copy()
         
         cols = ['n_value_emp', 'n_value_lit']
         for c in cols:
